@@ -1,6 +1,7 @@
 import json
 from program_synthesis.algolisp.dataset import executor
 import os
+import gc
 
 def filter_dataset(original_file, new_file):
     ex = executor.LispExecutor()
@@ -12,11 +13,20 @@ def filter_dataset(original_file, new_file):
             line_cnt += 1
             data = json.loads(line)
             program = data['short_tree']
+
+            only_words = True
+            for word in data['text']:
+                if ' ' in word:
+                    only_words = False
+                    break
+
             evaluation = executor.evaluate_code(data['short_tree'], data['args'], data['tests'], ex)
-            if evaluation['tests-passed'] == evaluation['tests-executed']:
+
+            if only_words and evaluation['tests-passed'] == evaluation['tests-executed']:
                 filtered_data.append(data)
 
             print('processing %s ... %d' % (original_file, line_cnt), end='\r', flush=True)
+            gc.collect()
             
     print('processing %s ... DONE   ' % original_file, flush=True)
     print('saving %s ... 0' % new_file, end='\r', flush=True)
@@ -32,7 +42,7 @@ def main():
     if not os.path.exists('../filtered_data/'):
         os.mkdir('../filtered_data/')
     for t in 'train dev test'.split():
-        filter_dataset('metaset3.' + t + '.jsonl', '../filtered_data/meatset3.' + t + '.jsonl')
+        filter_dataset('metaset3.' + t + '.jsonl', '../filtered_data/metaset3.' + t + '.jsonl')
 
 if __name__ == '__main__':
     exit(main())
