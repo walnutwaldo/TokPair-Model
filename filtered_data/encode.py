@@ -1,5 +1,6 @@
 import json
 import copy
+import sys
 from collections import Counter
 from program_synthesis.algolisp.dataset import executor
 
@@ -76,6 +77,9 @@ def encode(in_file, out_file):
             f.write('\n')
 
 def main():
+    global vocab_size
+    if len(sys.argv) > 1:
+        vocab_size = int(sys.argv[1])
     load_sketches()
     for dset in 'train dev test'.split():
         encode('metaset3.' + dset + '.jsonl', 'encoded/' + dset + '-' + str(vocab_size) + '.jsonl')

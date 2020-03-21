@@ -3,6 +3,8 @@ import copy
 from collections import Counter
 from program_synthesis.algolisp.dataset import executor
 
+# could be slightly optimized by using dicts to maintain which tokens are present
+
 vocab_size = 200
 
 sketches = []

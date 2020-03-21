@@ -1,4 +1,5 @@
 import json
+import sys
 
 vocab_size = 100
 
@@ -22,6 +23,9 @@ def analyze(file_name):
     return count
 
 def main():
+    global vocab_size
+    if len(sys.argv) > 1:
+        vocab_size = int(sys.argv[1])
     counts = {}
     for d_set in 'test dev train'.split():
         counts[d_set] = analyze(d_set + '-' + str(vocab_size) + '.jsonl')
