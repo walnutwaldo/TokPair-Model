@@ -10,6 +10,7 @@ vocab_size = 200
 sketches = []
 
 programs = []
+program_tokens = []
 command_cnt = Counter()
 command_pair_cnt = Counter()
 
@@ -33,20 +34,24 @@ def index_of_sketch(sketch):
     return -1
 
 def encode(program):
+    token_set = set()
     if type(program) is list:
         sketch = [program[0]] + ['<HOLE>'] * (len(program) - 1)
         program[0] = index_of_sketch(sketch)
         if program[0] == -1:
             sketches.append(sketch)
             program[0] = len(sketches) - 1
+        token_set.add(program[0])
 
         for i in range(1, len(program)):
-            program[i] = encode(program[i])
+            program[i], ts = encode(program[i])
+            token_set = token_set.union(ts)
     else:
         if program not in sketches:
             sketches.append(program)
         program = sketches.index(program)
-    return program
+        token_set.add(program)
+    return program, token_set
 
 def combine(par_sketch, child_sketch, child_idx):
     if par_sketch == '<HOLE>':
@@ -74,13 +79,14 @@ def add_programs(file_name):
             line_cnt += 1
             data = json.loads(line)
             program = data['short_tree']
-            program = encode(program)
+            program, token_set = encode(program)
             programs.append(program)
-            if (line_cnt % 100 == 0):
+            program_tokens.append(token_set)
+            if line_cnt % 1 == 0:
                 print('processing %s ... %d' % (file_name, line_cnt), end='\r', flush=True)
     print('processing %s ... DONE  ' % file_name, flush=True)
 
-def init_cnt(program):
+def add_cnt(program):
     if type(program) is not list:
         command_cnt[program] += 1
         return
@@ -88,31 +94,46 @@ def init_cnt(program):
     for i, a in enumerate(program[1:]):
         child_command = a[0] if type(a) is list else a
         command_pair_cnt[(program[0], i, child_command)] += 1 
-        init_cnt(a)
+        add_cnt(a)
+
+def remove_cnt(program):
+    if type(program) is not list:
+        command_cnt[program] -= 1
+        return
+    command_cnt[program[0]] -= 1
+    for i, a in enumerate(program[1:]):
+        child_command = a[0] if type(a) is list else a
+        command_pair_cnt[(program[0], i, child_command)] -= 1
+        remove_cnt(a)
 
 def upd(program, par_sketch, child_sketch, child_idx, new_sketch):
     def recur(prog):
         return upd(prog, par_sketch, child_sketch, child_idx, new_sketch)
 
     if type(program) is not list:
-        return program
+        token_set = set()
+        token_set.add(program)
+        return program, token_set
 
     if program[0] == par_sketch and child_idx + 1 < len(program):
         x = program[child_idx + 1]
-        if type(x) is list:
-            if x[0] == child_sketch:
-                program = [new_sketch] + program[1:child_idx + 1] + x[1:] + program[child_idx + 2:]
-        else:
-            if x == child_sketch:
-                program = [new_sketch] + program[1:child_idx + 1] + program[child_idx + 2:]
+        if type(x) is list and x[0] == child_sketch:
+            program = [new_sketch] + program[1:child_idx + 1] + x[1:] + program[child_idx + 2:]
+        elif type(x) is not list and x == child_sketch:
+            program = [new_sketch] + program[1:child_idx + 1] + program[child_idx + 2:]
         
     if len(program) is 1:
-        return program[0]
-    return [recur(x) for x in program]
+        return recur(program[0])
+    res = [recur(x) for x in program]
+    program_res = [a[0] for a in res]
+    token_set = set()
+    for a in res:
+        token_set = token_set.union(a[1])
+    return program_res, token_set
 
 def init():
     for program in programs:
-        init_cnt(program)
+        add_cnt(program)
 
 def main():
     for t in 'train dev test'.split():
@@ -130,12 +151,14 @@ def main():
         print(freq)
         print('combining %s and %s at index %d' % (str(sketches[par_sketch]), str(sketches[child_sketch]), child_idx), flush=True)
         sketches.append(combine(sketches[par_sketch], sketches[child_sketch], child_idx))
-        command_pair_cnt.clear()
         for i in range(len(programs)):
-            programs[i] = upd(programs[i], par_sketch, child_sketch, child_idx, len(sketches) - 1)
-            init_cnt(programs[i])
-            print('%d/%d' % (i + 1, len(programs)), end='\r', flush=True)
-        print()
+            if par_sketch in program_tokens[i] and child_sketch in program_tokens[i]:
+                remove_cnt(programs[i])
+                programs[i], program_tokens[i] = upd(programs[i], par_sketch, child_sketch, child_idx, len(sketches) - 1)
+                add_cnt(programs[i])
+            if (i + 1) % 100 == 0:
+                print('%d/%d' % (i + 1, len(programs)), end='\r', flush=True)
+        print('%d/%d'%(len(programs), len(programs)))
         combinations.append({'id':len(sketches) - 1, 'tree':sketches[-1], 'par_sketch':par_sketch, 'child_sketch':child_sketch, 'child_idx':child_idx, 'frequency':freq})
 
     with open('sketches.jsonl', 'a') as f:

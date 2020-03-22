@@ -1,32 +1,33 @@
 import json
 from program_synthesis.algolisp.dataset import executor
 import os
-import gc
+
+def passes_evaluation(data):
+    ex = executor.LispExecutor()
+    evaluation = executor.evaluate_code(data['short_tree'], data['args'], data['tests'], ex)
+    return evaluation['tests-passed'] == evaluation['tests-executed']
 
 def filter_dataset(original_file, new_file):
-    ex = executor.LispExecutor()
     print('processing %s ... 0' % original_file, end='\r', flush=True)
-    line_cnt = 0
     filtered_data = []
+    lines = []
     with open(original_file, 'r') as f:
         for line in f:
-            line_cnt += 1
-            data = json.loads(line)
-            program = data['short_tree']
+            lines.append(line)
+    for i, line in enumerate(lines):
+        data = json.loads(line)
+        program = data['short_tree']
 
-            only_words = True
-            for word in data['text']:
-                if ' ' in word:
-                    only_words = False
-                    break
+        only_words = True
+        for word in data['text']:
+            if ' ' in word:
+                only_words = False
+                break
 
-            evaluation = executor.evaluate_code(data['short_tree'], data['args'], data['tests'], ex)
+        if only_words and passes_evaluation(data):
+            filtered_data.append(data)
 
-            if only_words and evaluation['tests-passed'] == evaluation['tests-executed']:
-                filtered_data.append(data)
-
-            print('processing %s ... %d' % (original_file, line_cnt), end='\r', flush=True)
-            gc.collect()
+        print('processing %s ... %d' % (original_file, i + 1), end='\r', flush=True)
             
     print('processing %s ... DONE   ' % original_file, flush=True)
     print('saving %s ... 0' % new_file, end='\r', flush=True)
