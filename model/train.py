@@ -3,6 +3,8 @@ import tensorflow.compat.v1 as tf
 import datasets
 import model
 
+tf.disable_eager_execution()
+
 FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
