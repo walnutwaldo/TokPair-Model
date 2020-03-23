@@ -7,6 +7,7 @@ from program_synthesis.algolisp.dataset import executor
 vocab_size = 100
 primitives = []
 sketches = []
+vocab_map = {}
 
 def load_sketches():
     with open('sketches.jsonl', 'r') as f:
@@ -19,6 +20,12 @@ def load_sketches():
 
             if len(sketches) + len(primitives) == vocab_size:
                 break
+
+def load_vocab():
+    with open('vocab.txt', 'r') as f:
+        for line in f:
+            i, w = line.split()
+            vocab_map[w] = int(i)
 
 def primitive_encode(tree):
     token_set = set()
@@ -65,6 +72,9 @@ def encode_tree(tree):
             res = apply_sketch(sketch, res, token_set)
     return res
 
+def encode_text(text):
+    return [vocab_map[w] for w in text]
+
 def encode(in_file, out_file):
     problems = []
     with open(in_file, 'r') as f:
@@ -73,6 +83,7 @@ def encode(in_file, out_file):
     with open(out_file, 'w') as f:
         for problem in problems:
             problem['encoded_tree'] = encode_tree(problem['short_tree'])
+            problem['encoded_text'] = encode_text(problem['text'])
             json.dump(problem, f)
             f.write('\n')
 
@@ -81,6 +92,7 @@ def main():
     if len(sys.argv) > 1:
         vocab_size = int(sys.argv[1])
     load_sketches()
+    load_vocab()
     for dset in 'train dev test'.split():
         encode('metaset3.' + dset + '.jsonl', 'encoded/' + dset + '-' + str(vocab_size) + '.jsonl')
 

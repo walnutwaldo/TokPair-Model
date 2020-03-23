@@ -1,3 +1,4 @@
 *.jsonl
 .env/
 program_synthesis
+__pycache__

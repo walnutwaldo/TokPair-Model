@@ -3,6 +3,8 @@ import sys
 from collections import Counter
 
 vocab_size = 100
+longest_text = 0
+longest_program = 0
 all_words = set()
 
 def fill_token_set(token_set, tree):
@@ -12,7 +14,17 @@ def fill_token_set(token_set, tree):
     else:
         token_set.add(tree)
 
+def flatten(x):
+    res = []
+    for a in x:
+        if type(a) is list:
+            res.extend(flatten(a))
+        else:
+            res.append(a)
+    return res
+
 def analyze(file_name):
+    global longest_text, longest_program
     count = [0] * vocab_size
     word_counter = Counter()
     with open(file_name, 'r') as f:
@@ -24,6 +36,8 @@ def analyze(file_name):
             for token in token_set:
                 count[token] += 1
             text = problem['text']
+            longest_text = max(len(text), longest_text)
+            longest_program = max(len(flatten(encoded_tree)), longest_program)
             all_words.update(text)
             word_counter.update(text)
     return count, word_counter
@@ -44,6 +58,8 @@ def main():
     print(sorted([(token_counts['train'][i], token_counts['dev'][i], token_counts['test'][i], i) for i in range(vocab_size)]))
     print(sorted([(word_counts['train'][k], word_counts['dev'][k], word_counts['test'][k], k) for k in all_words]))
     print("%d words"%len(all_words))
+    print('longest text: %d'%longest_text)
+    print('longest program: %d'%longest_program)
 
     return 0
 
