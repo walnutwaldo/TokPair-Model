@@ -13,6 +13,7 @@ tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 #tf.flags.DEFINE_float("max_grad_norm", 50, "Gradient clipping norm limit.")
 tf.flags.DEFINE_float("learning_rate", 1.0 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-10, 'Epsilon for gradient update formula.')
+tf.flags.DEFINE_float('max_grad_norm', 50, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 
@@ -53,10 +54,22 @@ def build_model():
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
     loss = -tf.reduce_mean(token_log_probabilities) - tf.reduce_mean(syntax_adjs)
     
+    trainable_variables = tf.trainable_variables()
+    grads, _ = tf.clip_by_global_norm(
+            tf.gradients(loss, trainable_variables), FLAGS.max_grad_norm)
+
+    global_step = tf.get_variable(
+            name='global_step',
+            shape=[],
+            dtype=tf.int64,
+            initializer=tf.zeros_initializer(),
+            trainable=False,
+            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.GLOBAL_STEP])
+
     optimizer = tf.train.AdadeltaOptimizer(
         FLAGS.learning_rate, epsilon=FLAGS.optimizer_epsilon)
-
-    grad_descent = optimizer.minimize(loss)
+    grad_descent = optimizer.apply_gradients(
+            zip(grads, trainable_variables), global_step=global_step)
 
 def train_iter(sess):
     sess.run(train_iterator.initializer)
