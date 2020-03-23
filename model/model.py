@@ -2,7 +2,7 @@ import tensorflow.compat.v1 as tf
 import datasets
 import math
 
-def linear(inp, outp_size, activation, name):
+def linear(inp, outp_size, activation, name, bias_initialization_override=0):
     with tf.variable_scope(name + '_linear', reuse=tf.AUTO_REUSE):
         inp_size = inp.shape[-1]
         w = tf.get_variable('weight',
@@ -10,7 +10,7 @@ def linear(inp, outp_size, activation, name):
                 initializer=tf.initializers.variance_scaling)
         b = tf.get_variable('bias',
                 shape=[outp_size],
-                initializer=tf.constant_initializer(0))
+                initializer=tf.constant_initializer(bias_initialization_override))
         res = tf.matmul(inp, w) + b
         if activation is not None:
             res = activation(res)
@@ -24,12 +24,12 @@ def lstm(inp, ltm, stm, hidden_size, name):
         if ltm is None:
             ltm = tf.get_variable('initial_ltm',
                     shape = [1, hidden_size],
-                    initializer=tf.random_normal_initializer(stddev=1))
+                    initializer=tf.constant_initializer(0))
             ltm = tf.tile(ltm, [tf.shape(inp)[0], 1])
         if stm is None:
             stm = tf.get_variable('initial_stm',
                     shape = [1, hidden_size],
-                    initializer=tf.random_uniform_initializer(minval=0, maxval=1))
+                    initializer=tf.constant_initializer(0))
             stm = tf.tile(stm, [tf.shape(inp)[0], 1])
 
         inp = tf.transpose(inp, [1, 0, 2])

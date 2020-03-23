@@ -10,10 +10,9 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-#tf.flags.DEFINE_float("max_grad_norm", 50, "Gradient clipping norm limit.")
-tf.flags.DEFINE_float("learning_rate", 1.0 , "Optimizer learning rate.")
-tf.flags.DEFINE_float("optimizer_epsilon", 1e-10, 'Epsilon for gradient update formula.')
-tf.flags.DEFINE_float('max_grad_norm', 50, 'Maxmimum gradient norm.')
+tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
+tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
+tf.flags.DEFINE_float('max_grad_norm', 1e-8, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 
@@ -66,26 +65,27 @@ def build_model():
             trainable=False,
             collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.GLOBAL_STEP])
 
-    optimizer = tf.train.AdadeltaOptimizer(
+    optimizer = tf.train.AdamOptimizer(
         FLAGS.learning_rate, epsilon=FLAGS.optimizer_epsilon)
     grad_descent = optimizer.apply_gradients(
             zip(grads, trainable_variables), global_step=global_step)
 
-def train_iter(sess):
+def train_iter(sess, epoch):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
         batch_loss, _ = sess.run([loss, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('Training Iteration %d : Loss = %.3f'%(batch + 1, batch_loss))
+            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss))
         
 
 def train_model(min_training_iterations):
     with tf.Session() as sess:
         sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
-        train_iter(sess)
+        for epoch in range(5):
+            train_iter(sess, epoch)
 
 def main():
     get_datasets()
