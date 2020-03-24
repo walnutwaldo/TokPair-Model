@@ -78,7 +78,7 @@ def train_iter(sess, epoch):
         batch_loss, log_prob, _ = sess.run([loss, avg_log_prob, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + avg_log_prob)))
+            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         
 
 def train_model(min_training_iterations):
