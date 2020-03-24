@@ -5,6 +5,8 @@ import model
 
 tf.disable_eager_execution()
 
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+
 FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
@@ -12,7 +14,7 @@ tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
-tf.flags.DEFINE_float('max_grad_norm', 1e-8, 'Maxmimum gradient norm.')
+tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 
@@ -49,7 +51,7 @@ def build_model():
     target_placeholder = tf.placeholder(tf.int32, shape=(None, datasets.outp_size))
 
     logits, syntax_adjs = model.model(inp_placeholder, target_placeholder, FLAGS.hidden_size, FLAGS.embedding_size) # [batch, outp_size, num_tokens + 1]
-    token_log_probabilities = tf.log(select_row_elements(tf.nn.softmax(logits), target_placeholder))
+    token_log_probabilities = tf.log(1e-10 + select_row_elements(tf.nn.softmax(logits), target_placeholder))
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
     avg_log_prob = tf.reduce_mean(token_log_probabilities)
     loss = -avg_log_prob - tf.reduce_mean(syntax_adjs)
@@ -75,11 +77,11 @@ def train_iter(sess, epoch):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, log_prob, _ = sess.run([loss, avg_log_prob, grad_descent],
+        batch_loss, _logits, log_prob, _ = sess.run([loss, logits, avg_log_prob, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
-        
+            #print(_logits)
 
 def train_model(min_training_iterations):
     with tf.Session() as sess:
@@ -91,7 +93,8 @@ def train_model(min_training_iterations):
 def main():
     get_datasets()
     build_model()
-    train_model(FLAGS.min_training_iterations)
+    with tf.device('/GPU:0'):
+        train_model(FLAGS.min_training_iterations)
 
 if __name__ == '__main__':
     exit(main())
