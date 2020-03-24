@@ -5,8 +5,6 @@ import model
 
 tf.disable_eager_execution()
 
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-
 FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
@@ -93,8 +91,7 @@ def train_model(min_training_iterations):
 def main():
     get_datasets()
     build_model()
-    with tf.device('/GPU:0'):
-        train_model(FLAGS.min_training_iterations)
+    train_model(FLAGS.min_training_iterations)
 
 if __name__ == '__main__':
     exit(main())
