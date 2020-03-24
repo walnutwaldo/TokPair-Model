@@ -42,7 +42,7 @@ def select_row_elements(mat, idx):
 
 def build_model():
     global inp_placeholder, target_placeholder
-    global logits, loss
+    global logits, loss, avg_log_prob
     global grad_descent
 
     inp_placeholder = tf.placeholder(tf.int32, shape=(None, datasets.inp_size))
@@ -51,7 +51,8 @@ def build_model():
     logits, syntax_adjs = model.model(inp_placeholder, target_placeholder, FLAGS.hidden_size, FLAGS.embedding_size) # [batch, outp_size, num_tokens + 1]
     token_log_probabilities = tf.log(select_row_elements(tf.nn.softmax(logits), target_placeholder))
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
-    loss = -tf.reduce_mean(token_log_probabilities) - tf.reduce_mean(syntax_adjs)
+    avg_log_prob = tf.reduce_mean(token_log_probabilities)
+    loss = -avg_log_prob - tf.reduce_mean(syntax_adjs)
     
     trainable_variables = tf.trainable_variables()
     grads, _ = tf.clip_by_global_norm(
@@ -74,10 +75,10 @@ def train_iter(sess, epoch):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, _ = sess.run([loss, grad_descent],
+        batch_loss, log_prob, _ = sess.run([loss, avg_log_prob, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss))
+            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + avg_log_prob)))
         
 
 def train_model(min_training_iterations):
