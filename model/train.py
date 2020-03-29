@@ -12,6 +12,8 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
+tf.flags.DEFINE_string('model_name', 'model1', 'name of the model being trained')
+
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
 tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
@@ -45,7 +47,7 @@ def select_row_elements(mat, idx):
 def build_model():
     global inp_placeholder, target_placeholder
     global logits, loss, avg_log_prob
-    global grad_descent
+    global grad_descent, global_step
 
     inp_placeholder = tf.placeholder(tf.int32, shape=(None, datasets.inp_size))
     target_placeholder = tf.placeholder(tf.int32, shape=(None, datasets.outp_size))
@@ -73,22 +75,25 @@ def build_model():
     grad_descent = optimizer.apply_gradients(
             zip(grads, trainable_variables), global_step=global_step)
 
-def train_iter(sess, epoch):
+def train_iter(sess, epoch, saver):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, _logits, log_prob, _ = sess.run([loss, logits, avg_log_prob, grad_descent],
+        batch_loss, _logits, log_prob, step, _ = sess.run([loss, logits, avg_log_prob, global_step, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
             #print(_logits)
+        if step % 1000 == 0:
+            saver.save(sess, FLAGS.model_name, global_step=step)
 
 def train_model(min_training_iterations):
+    saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
         for epoch in range(5):
-            train_iter(sess, epoch)
+            train_iter(sess, epoch, saver)
 
 def main():
     get_datasets()
