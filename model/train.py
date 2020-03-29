@@ -25,12 +25,21 @@ tf.flags.DEFINE_integer("report_interval", 25,
 tf.flags.DEFINE_integer("checkpoint_interval", -1,
                         "Checkpointing step interval.")
 
+best_dev_loss = 20
+
 def get_datasets():
     global train_dataset, num_train_batches
+    global dev_dataset, num_dev_batches
     global train_iterator, next_train_element
+    global dev_iterator, next_dev_element
+
     train_dataset, num_train_batches = datasets.import_dataset('train', FLAGS.batch_size)
     train_iterator = tf.data.make_initializable_iterator(train_dataset)
     next_train_element = train_iterator.get_next()
+
+    dev_dataset, num_dev)batches = datasets.import_dataset('dev', FLAGS.batch_size)
+    dev_iterator = tf.data.make_initializable_iterator(dev_dataset)
+    next_dev_element = dev_iterator.get_next()
 
 def select_row_elements(mat, idx):
     final_shape = tf.shape(idx)
@@ -75,13 +84,32 @@ def train_iter(sess, epoch, saver):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, _logits, log_prob, step, _ = sess.run([loss, logits, avg_log_prob, global_step, grad_descent],
+        batch_loss, log_prob, step, _ = sess.run([loss, avg_log_prob, global_step, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
-            #print(_logits)
         if step % 1000 == 0:
-            saver.save(sess, FLAGS.save_dir, global_step=step)
+            dev_iter(sess, saver)
+
+def dev_iter(sess, saver):
+    global best_dev_loss
+    total_loss = 0
+    sess.run(dev_iterator.initializer)
+    for batch in range(num_dev_batches):
+        inp, target = sess.run(next_dev_element)
+        batch_loss, log_prob, step, _ = sess.run([loss, avg_log_prob, global_step, grad_descent],
+                feed_dict={inp_placeholder: inp, target_placeholder: target})
+        total_loss += batch_loss * inp.shape[0]
+        if (batch + 1) % FLAGS.report_interval == 0:
+            print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob))
+    curr_loss = total_loss / num_dev_batches
+
+    print('\tTotal Dev Loss = %.3f'%(curr_loss))
+
+    if curr_loss < best_dev_loss:
+        best_dev_loss = curr_loss
+        print('Current Model Saved')
+        saver.save(sess, FLAGS.save_dir, global_step=step)
 
 def train_model(min_training_iterations):
     saver = tf.train.Saver()
