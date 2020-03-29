@@ -37,7 +37,7 @@ def get_datasets():
     train_iterator = tf.data.make_initializable_iterator(train_dataset)
     next_train_element = train_iterator.get_next()
 
-    dev_dataset, num_dev)batches = datasets.import_dataset('dev', FLAGS.batch_size)
+    dev_dataset, num_dev_batches = datasets.import_dataset('dev', FLAGS.batch_size)
     dev_iterator = tf.data.make_initializable_iterator(dev_dataset)
     next_dev_element = dev_iterator.get_next()
 
