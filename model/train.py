@@ -10,7 +10,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('model_name', 'model1', 'name of the model being trained')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model1', 'location to save model')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
@@ -22,8 +22,6 @@ tf.flags.DEFINE_integer("min_training_iterations", 1250,
                         "Minimum number of iterations to train for.")
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
-tf.flags.DEFINE_string("checkpoint_dir", "model_checkpoints/",
-                       "Checkpointing directory.")
 tf.flags.DEFINE_integer("checkpoint_interval", -1,
                         "Checkpointing step interval.")
 
@@ -83,7 +81,7 @@ def train_iter(sess, epoch, saver):
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
             #print(_logits)
         if step % 1000 == 0:
-            saver.save(sess, FLAGS.model_name, global_step=step)
+            saver.save(sess, FLAGS.save_dir, global_step=step)
 
 def train_model(min_training_iterations):
     saver = tf.train.Saver()
