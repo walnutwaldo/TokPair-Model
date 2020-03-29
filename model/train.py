@@ -93,6 +93,7 @@ def train_iter(sess, epoch, saver):
 
 def dev_iter(sess, saver):
     global best_dev_loss
+
     total_loss = 0
     sess.run(dev_iterator.initializer)
     for batch in range(num_dev_batches):
@@ -101,7 +102,8 @@ def dev_iter(sess, saver):
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         total_loss += batch_loss * inp.shape[0]
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob))
+            print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob)))
+
     curr_loss = total_loss / num_dev_batches
 
     print('\tTotal Dev Loss = %.3f'%(curr_loss))
