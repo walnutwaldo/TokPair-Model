@@ -89,9 +89,9 @@ def train_iter(sess, epoch, saver):
         if (batch + 1) % FLAGS.report_interval == 0:
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         if step % 1000 == 0:
-            dev_iter(sess, saver)
+            dev_iter(step, sess, saver)
 
-def dev_iter(sess, saver):
+def dev_iter(step, sess, saver):
     global best_dev_loss
 
     total_loss = 0
