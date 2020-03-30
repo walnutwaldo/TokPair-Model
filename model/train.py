@@ -98,7 +98,7 @@ def dev_iter(sess, saver):
     sess.run(dev_iterator.initializer)
     for batch in range(num_dev_batches):
         inp, target = sess.run(next_dev_element)
-        batch_loss, log_prob, step, _ = sess.run([loss, avg_log_prob, global_step, grad_descent],
+        batch_loss, log_prob = sess.run([loss, avg_log_prob],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         total_loss += batch_loss * inp.shape[0]
         if (batch + 1) % FLAGS.report_interval == 0:
