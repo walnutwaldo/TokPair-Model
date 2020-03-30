@@ -95,22 +95,24 @@ def dev_iter(step, sess, saver):
     global best_dev_loss
 
     total_loss = 0
+    total_cnt = 0
     sess.run(dev_iterator.initializer)
     for batch in range(num_dev_batches):
         inp, target = sess.run(next_dev_element)
         batch_loss, log_prob = sess.run([loss, avg_log_prob],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         total_loss += batch_loss * inp.shape[0]
+        total_cnt += inp.shape[0]
         if (batch + 1) % FLAGS.report_interval == 0:
             print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob)))
 
-    curr_loss = total_loss / num_dev_batches
+    curr_loss = total_loss / total_cnt
 
-    print('\tTotal Dev Loss = %.3f'%(curr_loss))
+    print('\tAverage Dev Loss = %.3f'%(curr_loss))
 
     if curr_loss < best_dev_loss:
         best_dev_loss = curr_loss
-        print('Current Model Saved')
+        print('\t** Current Model Saved')
         saver.save(sess, FLAGS.save_dir, global_step=step)
 
 def train_model(min_training_iterations):
@@ -118,7 +120,7 @@ def train_model(min_training_iterations):
     with tf.Session() as sess:
         sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
-        for epoch in range(5):
+        for epoch in range(10):
             train_iter(sess, epoch, saver)
 
 def main():
