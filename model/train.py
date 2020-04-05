@@ -10,13 +10,14 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model1/model', 'location to save model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model', 'location to save model')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
 tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
+tf.flags.DEFINE_integer('num_epochs', 10, 'number of training epochs.')
 
 tf.flags.DEFINE_integer("min_training_iterations", 1250,
                         "Minimum number of iterations to train for.")
@@ -87,7 +88,7 @@ def train_iter(sess, epoch, saver):
         batch_loss, log_prob, step, _ = sess.run([loss, avg_log_prob, global_step, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, 5, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
+            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, FLAGS.num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         if step % 1000 == 0:
             dev_iter(step, sess, saver)
 
@@ -120,7 +121,7 @@ def train_model(min_training_iterations):
     with tf.Session() as sess:
         sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
-        for epoch in range(10):
+        for epoch in range(FLAGS.num_epochs):
             train_iter(sess, epoch, saver)
 
 def main():
