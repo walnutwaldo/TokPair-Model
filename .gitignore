@@ -1,4 +1,5 @@
 *.jsonl
+*.un~
 .env/
 program_synthesis/
 __pycache__
