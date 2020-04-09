@@ -43,3 +43,16 @@ def import_dataset(dset_type, batch_size):
     
     print('DONE')
     return dataset, (texts.shape[0] - 1) // batch_size + 1
+
+def import_raw_dataset(dset_type):
+    file_name = 'data/encoded/%s-%d.jsonl'%(dset_type, num_tokens)
+    if filtered:
+        file_name = 'filtered_' + file_name
+    print('loading %s ... '%file_name, end='')
+    problems = []
+    with open(file_name, 'r') as f:
+        for line in f:
+            problem = json.loads(line)
+            problems.append(problem)
+    print('DONE')
+    return problems

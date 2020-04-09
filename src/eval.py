@@ -1,7 +1,9 @@
 import json
+import numpy as np
 import tensorflow.compat.v1 as tf
 import datasets
 import model
+import random
 
 tf.disable_eager_execution()
 
@@ -21,12 +23,9 @@ tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
 
 def get_datasets():
-    global dev_dataset, num_dev_batches
-    global dev_iterator, next_dev_element
-
-    dev_dataset, num_dev_batches = datasets.import_dataset('dev', FLAGS.batch_size)
-    dev_iterator = tf.data.make_initializable_iterator(dev_dataset)
-    next_dev_element = dev_iterator.get_next()
+    global eval_problems
+    eval_problems = datasets.import_raw_dataset('test')
+    random.shuffle(eval_problems)
 
 def select_row_elements(mat, idx):
     final_shape = tf.shape(idx)
@@ -49,8 +48,8 @@ def build_model():
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
     avg_log_prob = tf.reduce_mean(token_log_probabilities)
     loss = -avg_log_prob - tf.reduce_mean(syntax_adjs)
-    
     trainable_variables = tf.trainable_variables()
+    
     grads, _ = tf.clip_by_global_norm(
             tf.gradients(loss, trainable_variables), FLAGS.max_grad_norm)
 
@@ -67,28 +66,31 @@ def build_model():
     grad_descent = optimizer.apply_gradients(
             zip(grads, trainable_variables), global_step=global_step)
 
-def dev_iter(sess):
-    total_loss = 0
-    total_cnt = 0
-    sess.run(dev_iterator.initializer)
-    for batch in range(num_dev_batches):
-        inp, target = sess.run(next_dev_element)
-        batch_loss, log_prob = sess.run([loss, avg_log_prob],
-                feed_dict={inp_placeholder: inp, target_placeholder: target})
-        total_loss += batch_loss * inp.shape[0]
-        total_cnt += inp.shape[0]
-        if (batch + 1) % FLAGS.report_interval == 0:
-            print('Dev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob)))
+def try_problem(problem, sess):
+    text = np.array([datasets.extend(problem['encoded_text'], datasets.inp_size, datasets.vocab_size)])
+    target_program = np.array([datasets.extend(datasets.flatten(problem['encoded_tree']), datasets.outp_size, datasets.num_tokens)])
 
-    curr_loss = total_loss / total_cnt
+    _loss, _log_prob = sess.run([loss, avg_log_prob], feed_dict={inp_placeholder:text, target_placeholder: target_program})
 
-    print('\tAverage Dev Loss = %.3f'%(curr_loss))
+    return _loss, _log_prob, True
 
 def eval_saved_model():
     saver = tf.train.Saver()
     with tf.Session() as sess:
         saver.restore(sess, FLAGS.save_dir)
-        dev_iter(sess)
+        total_loss = 0
+        total_log_prob = 0
+        total_solved = 0
+        for i, problem in enumerate(eval_problems):
+            _loss, _log_prob, solved = try_problem(problem, sess)
+            if solved:
+                total_solved += 1
+            total_loss += _loss
+            total_log_prob += _log_prob
+            if (i + 1) % 100 == 0:
+                print(_loss, _log_prob)
+                print('Evaluation [%d/%d]\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f'%(i + 1, len(eval_problems), total_loss/(i + 1), 10 ** (total_log_prob/(i + 1) + 2), total_solved/(i + 1) * 100))
+        print('Final Evaluation\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f'%(total_loss/len(eval_problems), 10 ** (total_log_prob/len(eval_problems) + 2), total_solved/len(eval_problems * 100)))
 
 def main():
     get_datasets()
