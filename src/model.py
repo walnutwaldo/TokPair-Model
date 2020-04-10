@@ -64,7 +64,7 @@ def model(inp, target, hidden_size, embedding_size):
                 initializer=tf.random_uniform_initializer(minval=-1, maxval=1))
         token_embedding = tf.get_variable('token_embedding',
                 shape=[datasets.num_tokens + 1, embedding_size],
-                initializer=tf.random_normal_initializer(minval=-1, maxval=1))
+                initializer=tf.random_uniform_initializer(minval=-1, maxval=1))
 
         inp = tf.gather_nd(vocab_embedding, tf.expand_dims(inp, axis=-1))
         target = tf.gather_nd(token_embedding, tf.expand_dims(target, axis=-1))
