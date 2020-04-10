@@ -83,7 +83,7 @@ def train_iter(sess, epoch, saver):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, log_prob, batch_logits, _ = sess.run([loss, avg_log_prob, global_step, logits, grad_descent],
+        batch_loss, log_prob, batch_logits, _ = sess.run([loss, avg_log_prob, logits, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
