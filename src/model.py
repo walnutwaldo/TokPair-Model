@@ -47,7 +47,7 @@ def lstm(inp, ltm, stm, hidden_size, name, reuse=tf.AUTO_REUSE):
 
             #stm = linear(h, hidden_size, tf.sigmoid, 'outp') * ltm
             #outps.append(stm)
-            outps.append(linear(h, hidden_size, tf.sigmoid, 'outp') * ltm
+            outps.append(linear(h, hidden_size, tf.sigmoid, 'outp') * ltm)
 
     return tf.transpose(tf.stack(outps, axis=0), [1, 0, 2]), ltm
 
