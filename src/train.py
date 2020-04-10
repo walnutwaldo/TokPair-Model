@@ -85,7 +85,7 @@ def train_iter(sess, epoch, saver):
         inp, target = sess.run(next_train_element)
         batch_loss, log_prob, _ = sess.run([loss, avg_log_prob, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
-        if np.isnan(batch_loss):
+        if tf.math.is_nan(batch_loss):
             return False
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
