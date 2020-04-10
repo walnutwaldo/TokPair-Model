@@ -83,13 +83,16 @@ def train_iter(sess, epoch, saver):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
-        batch_loss, log_prob, batch_logits, _ = sess.run([loss, avg_log_prob, logits, grad_descent],
+        batch_loss, log_prob, _ = sess.run([loss, avg_log_prob, grad_descent],
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
+        if np.isnan(batch_loss):
+            return False
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, FLAGS.num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         if step % 1000 == 0:
             dev_iter(step, sess, saver)
+    return True
 
 def dev_iter(step, sess, saver):
     global best_dev_loss
@@ -120,8 +123,12 @@ def train_model(min_training_iterations):
     with tf.Session() as sess:
         sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
-        for epoch in range(FLAGS.num_epochs):
-            train_iter(sess, epoch, saver)
+        epoch = 0
+        while epoch < FLAGS.num_epochs:
+            if not train_iter(sess, epoch, saver):
+                sess.run(tf.local_variables_initializer())
+                sess.run(tf.global_variables_initializer())
+                epoch = 0
 
 def main():
     get_datasets()
