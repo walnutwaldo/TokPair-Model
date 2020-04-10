@@ -38,7 +38,7 @@ def import_dataset(dset_type, batch_size):
     #tests = [problem['tests'] for problem in problems]
 
     dataset = tf.data.Dataset.from_tensor_slices((texts, programs))
-    dataset = dataset.shuffle(shuffle_buffer)
+    #dataset = dataset.shuffle(shuffle_buffer)
     dataset = dataset.batch(batch_size)
     
     print('DONE')

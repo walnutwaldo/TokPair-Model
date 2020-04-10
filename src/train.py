@@ -127,10 +127,9 @@ def train_model(min_training_iterations):
         epoch = 0
         while epoch < FLAGS.num_epochs:
             if not train_iter(sess, epoch, saver):
-                print('reshuffling data and restarting training')
+                print('restarting training')
                 sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
-                get_datasets()
                 epoch = 0
 
 def main():
