@@ -9,7 +9,7 @@ vocab_size = 284 # dows not include pad
 inp_size = 164
 outp_size = 217
 
-shuffle_buffer = 1
+shuffle_buffer = 1000
 
 def flatten(x):
     res = []
