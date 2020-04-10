@@ -21,6 +21,7 @@ tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
+tf.flags.DEFINE_integer("beam_size", 1, "beam size of search.")
 
 def get_datasets():
     global eval_problems
@@ -66,13 +67,98 @@ def build_model():
     grad_descent = optimizer.apply_gradients(
             zip(grads, trainable_variables), global_step=global_step)
 
+def build_onto_model():
+    global encoder_outps, encoder_ltm
+    global encoder_outps_ph, encoder_ltm_ph
+    global prev_token_ph, pass_data_ph_map
+    global decode_next, decoder_pass_data
+    global init_decoder_outp, init_decoder_pass_data
+
+    encoder_outps, encoder_ltm = model.run_encoder(inp_placeholder, FLAGS.hidden_size, FLAGS.embedding_size)
+
+    prev_token_ph = tf.placeholder(tf.int32, shape=(None))
+    encoder_outps_ph = tf.placeholder(tf.float32, shape=(None, datasets.inp_size, FLAGS.hidden_size))
+    encoder_ltm_ph = tf.placeholder(tf.float32, shape=(None, FLAGS.hidden_size))
+
+    init_decoder_outp, init_decoder_pass_data = model.run_single_decoder([datasets.num_tokens + 1], encoder_outps_ph[:,-1,:], encoder_ltm_ph, None, None, encoder_outps_ph, FLAGS.hidden_size, FLAGS.embedding_size)
+
+    pass_data_ph_map = {}
+    pass_data_ph_map['last_decoder_outp_ph'] = tf.placeholder(tf.float32, shape=(None, FLAGS.hidden_size))
+    pass_data_ph_map['last_decoder_ltm_ph'] = tf.placeholder(tf.float32, shape=(None, FLAGS.hidden_size))
+    pass_data_ph_map['last_syntax_outp_ph'] = tf.placeholder(tf.float32, shape=(None, FLAGS.hidden_size))
+    pass_data_ph_map['last_syntax_ltm_ph'] = tf.placeholder(tf.float32, shape=(None, FLAGS.hidden_size))
+
+    decode_next, decoder_pass_data = model.run_single_decoder(prev_token_ph,
+            pass_data_ph_map['last_decoder_outp_ph'],
+            pass_data_ph_map['last_decoder_ltm_ph'],
+            pass_data_ph_map['last_syntax_outp_ph'],
+            pass_data_ph_map['last_syntax_ltm_ph'],
+            encoder_outps_ph,
+            FLAGS.hidden_size, FLAGS.embedding_size)
+
+def softmax(x):
+    x = x - np.amax(x, axis=-1)
+    y = np.exp(x)
+    return y / np.sum(y, axis=-1)
+
 def try_problem(problem, sess):
-    text = np.array([datasets.extend(problem['encoded_text'], datasets.inp_size, datasets.vocab_size)])
-    target_program = np.array([datasets.extend(datasets.flatten(problem['encoded_tree']), datasets.outp_size, datasets.num_tokens)])
+    text = np.array([datasets.extend(problem['encoded_text'], 
+            datasets.inp_size, datasets.vocab_size)])
+    target_program = np.array([datasets.extend(datasets.flatten(problem['encoded_tree']),
+            datasets.outp_size, datasets.num_tokens)])
 
-    _loss, _log_prob = sess.run([loss, avg_log_prob], feed_dict={inp_placeholder:text, target_placeholder: target_program})
+    this_loss, this_log_prob = sess.run([loss, avg_log_prob],
+            feed_dict={inp_placeholder:text, target_placeholder: target_program})
 
-    return _loss, _log_prob, True
+    this_encoder_outps, this_encoder_ltm = sess.run([encoder_outps, encoder_ltm],
+            feed_dict={inp_placeholder: text})
+
+    outp, pass_data = sess.run([init_decoder_outp, init_decoder_pass_data],
+            feed_dict={encoder_outps_ph: this_encoder_outps, encoder_ltm_ph: this_encoder_ltm})
+    prob_dist = softmax(outp)
+
+    queue = [(np.log(1e-10 + prob_dist[0, i]), [i], pass_data) for i in range(datasets.num_tokens + 1)]
+    queue = sorted(queue, key=lambda x: x[0])[-FLAGS.beam_size:]
+
+    cnt = 0
+    while True:
+        program, base_prob, pass_data = None, None, None
+        for i in range(len(queue) - 1, -1, -1):
+            if queue[i][1][-1] != datasets.num_tokens and len(queue[i][1]) < datasets.outp_size:
+                program = queue[i][1]
+                base_prob = queue[i][0]
+                pass_data = queue[i][2]
+                queue = queue[:i] + queue[i + 1:]
+                break
+        if program is None:
+            break
+        cnt += 1
+        print("[%d] %.2f"%(cnt, base_prob))
+
+        outp, pass_data = sess.run([decode_next, decoder_pass_data], feed_dict={
+                prev_token_ph: np.asarray([program[-1]]),
+                pass_data_ph_map['last_decoder_outp_ph']: pass_data[0],
+                pass_data_ph_map['last_decoder_ltm_ph']: pass_data[1],
+                pass_data_ph_map['last_syntax_outp_ph']: pass_data[2],
+                pass_data_ph_map['last_syntax_ltm_ph']: pass_data[3],
+                encoder_outps_ph: this_encoder_outps})
+        prob_dist = softmax(outp)
+        new_states = [(np.log(1e-10 + prob_dist[0, i]) + base_prob, program + [i], pass_data) \
+                for i in range(datasets.num_tokens + 1)]
+        queue = sorted(queue + new_states, key=lambda x: x[0])[-FLAGS.beam_size:]
+
+    print(list(target_program[0]))
+    for i in range(FLAGS.beam_size):
+        solved = True
+        for a, b in zip(target_program[0], queue[i][1]):
+            if int(a) == datasets.num_tokens:
+                break
+            if int(a) != int(b):
+                solved = False
+        if solved:
+            return this_loss, this_log_prob, True
+
+    return this_loss, this_log_prob, False
 
 def eval_saved_model():
     saver = tf.train.Saver()
@@ -87,14 +173,14 @@ def eval_saved_model():
                 total_solved += 1
             total_loss += _loss
             total_log_prob += _log_prob
-            if (i + 1) % 100 == 0:
-                print(_loss, _log_prob)
-                print('Evaluation [%d/%d]\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f'%(i + 1, len(eval_problems), total_loss/(i + 1), 10 ** (total_log_prob/(i + 1) + 2), total_solved/(i + 1) * 100))
-        print('Final Evaluation\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f'%(total_loss/len(eval_problems), 10 ** (total_log_prob/len(eval_problems) + 2), total_solved/len(eval_problems * 100)))
+            if (i + 1) % 1 == 0:
+                print('Evaluation [%d/%d]\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f%%'%(i + 1, len(eval_problems), total_loss/(i + 1), 10 ** (total_log_prob/(i + 1) + 2), total_solved/(i + 1) * 100))
+        print('Final Evaluation\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f%%'%(total_loss/len(eval_problems), 10 ** (total_log_prob/len(eval_problems) + 2), total_solved/len(eval_problems) * 100))
 
 def main():
     get_datasets()
     build_model()
+    build_onto_model()
     eval_saved_model()
 
 if __name__ == '__main__':
