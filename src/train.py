@@ -60,7 +60,7 @@ def build_model():
     token_log_probabilities = tf.log(1e-10 + select_row_elements(tf.nn.softmax(logits), target_placeholder))
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
     avg_log_prob = tf.reduce_mean(token_log_probabilities)
-    loss = -avg_log_prob# - tf.reduce_mean(syntax_adjs)
+    loss = -avg_log_prob - tf.reduce_mean(syntax_adjs)
     
     trainable_variables = tf.trainable_variables()
     grads, _ = tf.clip_by_global_norm(
