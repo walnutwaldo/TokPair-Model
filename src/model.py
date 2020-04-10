@@ -38,16 +38,15 @@ def lstm(inp, ltm, stm, hidden_size, name, reuse=tf.AUTO_REUSE):
             inp_tokens = inp[t]
             h = tf.concat([stm, inp_tokens], axis=1)
 
-            forget = linear(h, hidden_size, tf.sigmoid, 'forget', bias_initialization_override=-5)
+            forget = linear(h, hidden_size, tf.sigmoid, 'forget')
             ltm *= (1 - forget)
 
             write = linear(h, hidden_size, tf.tanh, 'write')
             write *= linear(h, hidden_size, tf.sigmoid, 'write_filter')
             ltm += write
 
-            #stm = linear(h, hidden_size, tf.sigmoid, 'outp') * ltm
-            #outps.append(stm)
             outps.append(linear(h, hidden_size, tf.sigmoid, 'outp') * ltm)
+            stm = outps[-1]
 
     return tf.transpose(tf.stack(outps, axis=0), [1, 0, 2]), ltm
 
