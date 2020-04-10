@@ -88,7 +88,7 @@ def train_iter(sess, epoch, saver):
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
             print('Iteration %d/%d Logits: %s'%(batch + 1, num_train_batches, str(batch_logits)))
-            print('Iteration %d/%d Weights: %s'%(batch + 1, num_train_batches, str(sess.run(tf.trainable_variables())))
+            print('Iteration %d/%d Weights: %s'%(batch + 1, num_train_batches, str(sess.run(tf.trainable_variables()))))
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, FLAGS.num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         if step % 1000 == 0:
             dev_iter(step, sess, saver)
