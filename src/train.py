@@ -60,7 +60,7 @@ def build_model():
     token_log_probabilities = tf.log(1e-10 + select_row_elements(tf.nn.softmax(logits), target_placeholder))
     syntax_adjs = select_row_elements(syntax_adjs, target_placeholder)
     avg_log_prob = tf.reduce_mean(token_log_probabilities)
-    loss = -avg_log_prob - tf.reduce_mean(syntax_adjs)
+    loss = -avg_log_prob# - tf.reduce_mean(syntax_adjs)
     
     trainable_variables = tf.trainable_variables()
     grads, _ = tf.clip_by_global_norm(
@@ -87,8 +87,6 @@ def train_iter(sess, epoch, saver):
                 feed_dict={inp_placeholder: inp, target_placeholder: target})
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('Iteration %d/%d Logits: %s'%(batch + 1, num_train_batches, str(batch_logits)))
-            print('Iteration %d/%d Weights: %s'%(batch + 1, num_train_batches, str(sess.run(tf.trainable_variables()))))
             print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, FLAGS.num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
         if step % 1000 == 0:
             dev_iter(step, sess, saver)
