@@ -87,7 +87,7 @@ def model(inp, target, hidden_size, embedding_size):
         syntax_mask, _ = lstm(shifted_target, None, None, hidden_size, 'syntax')
         syntax_mask = linear(syntax_mask, datasets.num_tokens + 1, lambda x: 20 * tf.nn.tanh(x / 20), 'syntax')
 
-        outp = outp # - tf.exp(-syntax_mask)
+        outp = outp - tf.exp(-syntax_mask)
 
         return outp, syntax_mask
 
