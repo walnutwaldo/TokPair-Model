@@ -120,7 +120,6 @@ def try_problem(problem, sess):
     queue = [(np.log(1e-10 + prob_dist[0, i]), [i], pass_data) for i in range(datasets.num_tokens + 1)]
     queue = sorted(queue, key=lambda x: x[0])[-FLAGS.beam_size:]
 
-    cnt = 0
     while True:
         program, base_prob, pass_data = None, None, None
         for i in range(len(queue) - 1, -1, -1):
@@ -132,8 +131,6 @@ def try_problem(problem, sess):
                 break
         if program is None:
             break
-        cnt += 1
-        print("[%d] %.2f"%(cnt, base_prob))
 
         outp, pass_data = sess.run([decode_next, decoder_pass_data], feed_dict={
                 prev_token_ph: np.asarray([program[-1]]),
@@ -146,8 +143,6 @@ def try_problem(problem, sess):
         new_states = [(np.log(1e-10 + prob_dist[0, i]) + base_prob, program + [i], pass_data) \
                 for i in range(datasets.num_tokens + 1)]
         queue = sorted(queue + new_states, key=lambda x: x[0])[-FLAGS.beam_size:]
-
-    print(list(target_program[0]))
     for i in range(FLAGS.beam_size):
         solved = True
         for a, b in zip(target_program[0], queue[i][1]):
