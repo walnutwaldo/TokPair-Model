@@ -13,6 +13,9 @@ tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
 tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model.ckpt-13000', 'location to saved model')
+tf.flags.DEFINE_string('dataset', 'test', 'the dataset used for evaluation.')
+
+
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
 tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
@@ -25,7 +28,7 @@ tf.flags.DEFINE_integer("beam_size", 1, "beam size of search.")
 
 def get_datasets():
     global eval_problems
-    eval_problems = datasets.import_raw_dataset('test')
+    eval_problems = datasets.import_raw_dataset(FLAGS.dataset)
     random.shuffle(eval_problems)
 
 def select_row_elements(mat, idx):
