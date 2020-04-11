@@ -168,7 +168,7 @@ def eval_saved_model():
                 total_solved += 1
             total_loss += _loss
             total_log_prob += _log_prob
-            if (i + 1) % 1 == 0:
+            if (i + 1) % FLAGS.report_interval == 0:
                 print('Evaluation [%d/%d]\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f%%'%(i + 1, len(eval_problems), total_loss/(i + 1), 10 ** (total_log_prob/(i + 1) + 2), total_solved/(i + 1) * 100))
         print('Final Evaluation\n\tLoss: %.3f\n\tAverage Token Probability = %.2f%%\n\tPercent Solved: %.2f%%'%(total_loss/len(eval_problems), 10 ** (total_log_prob/len(eval_problems) + 2), total_solved/len(eval_problems) * 100))
 
