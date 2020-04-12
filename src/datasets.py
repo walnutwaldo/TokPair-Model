@@ -3,22 +3,22 @@ import json
 import numpy as np
 
 filtered = True
-num_tokens = 81 # does not include pad
-vocab_size = 284 # dows not include pad
+num_tokens = 200 # does not include pad
+vocab_size = 284 # does not include pad
 
 inp_size = 164
-outp_size = 217
+outp_size = 80 #217
 
 shuffle_buffer = 1000
 
 def flatten(x):
-    res = []
-    for a in x:
-        if type(a) is list:
+    if type(x) is list:
+        res = []
+        for a in x:
             res.extend(flatten(a))
-        else:
-            res.append(a)
-    return res
+        return res
+    else:
+        return [x]
 
 def extend(x, new_len, pad):
     return x + [pad] * (new_len - len(x))

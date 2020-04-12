@@ -15,13 +15,13 @@ def fill_token_set(token_set, tree):
         token_set.add(tree)
 
 def flatten(x):
-    res = []
-    for a in x:
-        if type(a) is list:
+    if type(x) is list:
+        res = []
+        for a in x:
             res.extend(flatten(a))
-        else:
-            res.append(a)
-    return res
+        return res
+    else:
+        return [x]
 
 def analyze(file_name):
     global longest_text, longest_program
@@ -50,8 +50,7 @@ def main():
     for d_set in 'test dev train'.split():
         token_counts[d_set], word_counts[d_set] = analyze(d_set + '-' + str(vocab_size) + '.jsonl')
     for i in range(vocab_size):
-        assert(token_counts['train'][i] > 0)
-        assert(token_counts['train'][i] > 0)
+        assert(token_counts['train'][i] > 0 or (token_counts['dev'][i] == 0 and token_counts['test'][i] == 0))
     for k in all_words:
         assert(word_counts['train'][k] > 0)
         assert(word_counts['train'][k] > 0)

@@ -12,7 +12,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model.ckpt-13000', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model-11000', 'location to saved model')
 tf.flags.DEFINE_string('dataset', 'test', 'the dataset used for evaluation.')
 
 

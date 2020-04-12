@@ -11,7 +11,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model.ckpt-13000', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model', 'location to saved model')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
@@ -131,6 +131,8 @@ def train_model(min_training_iterations):
                 sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
                 epoch = 0
+            else:
+                epoch += 1
 
 def main():
     get_datasets()
