@@ -12,7 +12,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model-11000', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model3/model-16000', 'location to saved model')
 tf.flags.DEFINE_string('dataset', 'test', 'the dataset used for evaluation.')
 
 
@@ -24,7 +24,7 @@ tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
-tf.flags.DEFINE_integer("beam_size", 1, "beam size of search.")
+tf.flags.DEFINE_integer("beam_size", 10, "beam size of search.")
 
 def get_datasets():
     global eval_problems
@@ -179,7 +179,9 @@ def main():
     get_datasets()
     build_model()
     build_onto_model()
-    eval_saved_model()
+    tf.config.set_soft_device_placement(True)
+    with tf.device('/device:GPU:0'):
+        eval_saved_model()
 
 if __name__ == '__main__':
     exit(main())

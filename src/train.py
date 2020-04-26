@@ -6,12 +6,14 @@ import numpy as np
 
 tf.disable_eager_execution()
 
+print("Num GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
+
 FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model2/model', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model3/model', 'location to saved model')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
@@ -137,7 +139,9 @@ def train_model(min_training_iterations):
 def main():
     get_datasets()
     build_model()
-    train_model(FLAGS.min_training_iterations)
+    tf.config.set_soft_device_placement(True)
+    with tf.device('/device:GPU:0'):
+        train_model(FLAGS.min_training_iterations)
 
 if __name__ == '__main__':
     exit(main())

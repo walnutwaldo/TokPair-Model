@@ -1,5 +1,7 @@
 import json
 import copy
+import sys
+from sys import argv
 from collections import Counter
 from program_synthesis.algolisp.dataset import executor
 
@@ -136,6 +138,9 @@ def init():
         add_cnt(program)
 
 def main():
+    global vocab_size
+    if len(sys.argv) > 1:
+        vocab_size = int(sys.argv[1])
     for t in 'train dev test'.split():
         add_programs('metaset3.' + t + '.jsonl')
     init()
