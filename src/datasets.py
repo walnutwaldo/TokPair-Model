@@ -2,12 +2,12 @@ import tensorflow.compat.v1 as tf
 import json
 import numpy as np
 
-filtered = True
-num_tokens = 300 # does not include pad
-vocab_size = 284 # does not include pad
+filtered = False
+num_tokens = 200 # does not include pad
+vocab_size = 285 # does not include pad
 
 inp_size = 164
-outp_size = 74 #80 #217
+outp_size = 73
 
 shuffle_buffer = 1000
 
@@ -38,7 +38,7 @@ def import_dataset(dset_type, batch_size):
     #tests = [problem['tests'] for problem in problems]
 
     dataset = tf.data.Dataset.from_tensor_slices((texts, programs))
-    #dataset = dataset.shuffle(shuffle_buffer)
+    dataset = dataset.shuffle(shuffle_buffer)
     dataset = dataset.batch(batch_size)
     
     print('DONE')

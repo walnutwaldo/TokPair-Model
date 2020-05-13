@@ -1,9 +1,11 @@
 import json
 import numpy as np
 import tensorflow.compat.v1 as tf
+from program_synthesis.algolisp.dataset import executor
 import datasets
 import model
 import random
+import decoder
 
 tf.disable_eager_execution()
 
@@ -25,6 +27,8 @@ tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
 tf.flags.DEFINE_integer("beam_size", 10, "beam size of search.")
+
+ex = executor.LispExecutor()
 
 def get_datasets():
     global eval_problems
@@ -146,14 +150,16 @@ def try_problem(problem, sess):
         new_states = [(np.log(1e-10 + prob_dist[0, i]) + base_prob, program + [i], pass_data) \
                 for i in range(datasets.num_tokens + 1)]
         queue = sorted(queue + new_states, key=lambda x: x[0])[-FLAGS.beam_size:]
+
     for i in range(FLAGS.beam_size):
-        solved = True
-        for a, b in zip(target_program[0], queue[i][1]):
-            if int(a) == datasets.num_tokens:
-                break
-            if int(a) != int(b):
-                solved = False
-        if solved:
+        program, valid_tree = decoder.convert_to_short_tree(queue[i][1])
+        if not valid_tree:
+            continue
+        args = problem['args']
+        tests = problem['tests']
+
+        evaluation = executor.evaluate_code(valid_tree, args, tests, ex)
+        if evaluation['tests-passed'] == evaluation['tests-executes']:
             return this_loss, this_log_prob, True
 
     return this_loss, this_log_prob, False
