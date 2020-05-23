@@ -153,7 +153,7 @@ def try_problem(problem, sess):
 
     for i in range(FLAGS.beam_size):
         program, valid_tree = decoder.convert_to_short_tree(queue[i][1])
-        if not valid_tree:
+        if not program:
             continue
         args = problem['args']
         tests = problem['tests']

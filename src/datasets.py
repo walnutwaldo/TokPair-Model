@@ -2,7 +2,7 @@ import tensorflow.compat.v1 as tf
 import json
 import numpy as np
 
-filtered = False
+filtered = True
 num_tokens = 200 # does not include pad
 vocab_size = 285 # does not include pad
 
