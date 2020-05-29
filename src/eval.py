@@ -6,6 +6,8 @@ import datasets
 import model
 import random
 import decoder
+import validator
+import runner
 
 tf.disable_eager_execution()
 
@@ -33,7 +35,7 @@ ex = executor.LispExecutor()
 def get_datasets():
     global eval_problems
     eval_problems = datasets.import_raw_dataset(FLAGS.dataset)
-    random.shuffle(eval_problems)
+    #random.shuffle(eval_problems)
 
 def select_row_elements(mat, idx):
     final_shape = tf.shape(idx)
@@ -111,11 +113,11 @@ def softmax(x):
 def try_problem(problem, sess):
     text = np.array([datasets.extend(problem['encoded_text'], 
             datasets.inp_size, datasets.vocab_size)])
-    target_program = np.array([datasets.extend(datasets.flatten(problem['encoded_tree']),
-            datasets.outp_size, datasets.num_tokens)])
+    target_program = datasets.extend(datasets.flatten(problem['encoded_tree']),
+            datasets.outp_size, datasets.num_tokens)
 
     this_loss, this_log_prob = sess.run([loss, avg_log_prob],
-            feed_dict={inp_placeholder:text, target_placeholder: target_program})
+            feed_dict={inp_placeholder:text, target_placeholder: np.array([target_program])})
 
     this_encoder_outps, this_encoder_ltm = sess.run([encoder_outps, encoder_ltm],
             feed_dict={inp_placeholder: text})
@@ -151,15 +153,35 @@ def try_problem(problem, sess):
                 for i in range(datasets.num_tokens + 1)]
         queue = sorted(queue + new_states, key=lambda x: x[0])[-FLAGS.beam_size:]
 
+    while target_program[-1] == datasets.num_tokens:
+        target_program.pop(-1)
+
     for i in range(FLAGS.beam_size):
-        program, valid_tree = decoder.convert_to_short_tree(queue[i][1])
+        lin_prog = queue[i][1][:]
+        while len(lin_prog) and lin_prog[-1] == datasets.num_tokens:
+            lin_prog.pop(-1)
+
+        program = decoder.convert_to_short_tree(lin_prog)
         if not program:
             continue
+
+        if not validator.valid_program_for_args(program, problem['args']):
+            continue
+
         args = problem['args']
         tests = problem['tests']
 
-        evaluation = executor.evaluate_code(valid_tree, args, tests, ex)
-        if evaluation['tests-passed'] == evaluation['tests-executes']:
+        passes_all = True
+        for test in tests:
+            try:
+                outp = runner.run_program(program, test['input'])
+            except:
+                passes_all = False
+                break
+            if outp != test['output']:
+                passes_all = False
+                break
+        if passes_all:
             return this_loss, this_log_prob, True
 
     return this_loss, this_log_prob, False

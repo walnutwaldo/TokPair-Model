@@ -5,11 +5,11 @@ trees = {}
 loaded_sketches = False
 
 def load_sketches():
-    with open('../' + ('filtered_' if datasets.filtered else '') + 'data/sketches.jsonl', 'r') as f:
+    with open(('filtered_' if datasets.filtered else '') + 'data/sketches.jsonl', 'r') as f:
         for line in f:
             data = json.loads(line)
             trees[data['id']] = data['tree']
-            if len(trees) == datasets.vocab_size:
+            if len(trees) == datasets.num_tokens:
                 break
 
     loaded_sketches = True
@@ -18,10 +18,12 @@ def count_holes(tree):
     return sum([count(x) if type(x) is list else (1 if x == "<HOLE>" else 0) for x in tree])
 
 def replace_holes(tree, replacements):
-    res = [replace_holes(x, replacements) if type(x) is list else (replacements.pop(0) if x == "<HOLE>" else x) for x in tree]
-    if len(res) == 1:
-        return res[0]
-    return res
+    if type(tree) is list:
+        res = [replace_holes(x, replacements) if type(x) is list else (replacements.pop(0) if x == "<HOLE>" else x) for x in tree]
+        if len(res) == 1:
+            return res[0]
+        return res
+    return tree
 
 def build_tree(consumable):
     if not consumable:

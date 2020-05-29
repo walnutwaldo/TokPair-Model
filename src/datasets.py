@@ -3,11 +3,11 @@ import json
 import numpy as np
 
 filtered = True
-num_tokens = 200 # does not include pad
-vocab_size = 285 # does not include pad
+num_tokens = 81 #200 # does not include pad
+vocab_size = 284 # does not include pad
 
 inp_size = 164
-outp_size = 73
+outp_size = 217
 
 shuffle_buffer = 1000
 

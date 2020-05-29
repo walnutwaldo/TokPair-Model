@@ -2,8 +2,9 @@ import json
 from program_synthesis.algolisp.dataset import executor
 import os
 
+ex = executor.LispExecutor()
+
 def passes_evaluation(data):
-    ex = executor.LispExecutor()
     evaluation = executor.evaluate_code(data['short_tree'], data['args'], data['tests'], ex)
     return evaluation['tests-passed'] == evaluation['tests-executed']
 
