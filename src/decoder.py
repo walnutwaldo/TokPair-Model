@@ -15,7 +15,7 @@ def load_sketches():
     loaded_sketches = True
 
 def count_holes(tree):
-    return sum([count(x) if type(x) is list else (1 if x == "<HOLE>" else 0) for x in tree])
+    return sum([count_holes(x) if type(x) is list else (1 if x == "<HOLE>" else 0) for x in tree])
 
 def replace_holes(tree, replacements):
     if type(tree) is list:

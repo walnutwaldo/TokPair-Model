@@ -29,6 +29,7 @@ tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
 tf.flags.DEFINE_integer("beam_size", 10, "beam size of search.")
+tf.flags.DEFINE_bool('debug', False, 'if debugging')
 
 ex = executor.LispExecutor()
 
@@ -110,6 +111,8 @@ def softmax(x):
     y = np.exp(x)
     return y / np.sum(y, axis=-1)
 
+log = open('log.txt', 'w')
+
 def try_problem(problem, sess):
     text = np.array([datasets.extend(problem['encoded_text'], 
             datasets.inp_size, datasets.vocab_size)])
@@ -161,27 +164,58 @@ def try_problem(problem, sess):
         while len(lin_prog) and lin_prog[-1] == datasets.num_tokens:
             lin_prog.pop(-1)
 
+        if FLAGS.debug:
+            log.write('converting %s to short tree\n'%(str(lin_prog)))
+            log.flush()
         program = decoder.convert_to_short_tree(lin_prog)
         if not program:
+            if FLAGS.debug:
+                log.write('invalid\n')
+                log.flush()
             continue
 
+        if FLAGS.debug:
+            log.write('finished conversion\n')
+            log.flush()
+
+        if FLAGS.debug:
+            log.write('validating %s\n'%(str(program)))
+            log.flush()
         if not validator.valid_program_for_args(program, problem['args']):
+            if FLAGS.debug:
+                log.write('failed validation\n')
+                log.flush()
             continue
+        if FLAGS.debug:
+            log.write('passed validation\n')
+            log.flush()
 
         args = problem['args']
         tests = problem['tests']
 
         passes_all = True
         for test in tests:
+            if FLAGS.debug:
+                log.write('testing on %s\n'%str(test['input']))
+                log.flush()
             try:
                 outp = runner.run_program(program, test['input'])
             except:
                 passes_all = False
+                if FLAGS.debug:
+                    log.write('failed test (error)\n')
+                    log.flush()
                 break
             if outp != test['output']:
                 passes_all = False
+                if FLAGS.debug:
+                    log.write('failed test\n')
+                    log.flush()
                 break
         if passes_all:
+            if FLAGS.debug:
+                log.write('passed all tests\n')
+                log.flush()
             return this_loss, this_log_prob, True
 
     return this_loss, this_log_prob, False

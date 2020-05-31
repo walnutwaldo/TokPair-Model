@@ -6,6 +6,8 @@ debug = False
 def is_prime(x):
     if x < 2:
         return False
+    if x > 1e9:
+        raise Exception('TLE (checking primality of too large a number)')
     for i in range(2, int(math.sqrt(x)) + 1):
         if x % i == 0:
             return False
@@ -23,7 +25,7 @@ def get_digits(x):
 
 def get_range(lo, hi):
     if hi - lo > 10000:
-        raise RuntimeError('Asking for too large of range')
+        raise Exception('TLE (asking for too large a range)')
     return [x for x in range(lo, hi)]
 
 def make_partial1(v, f):
