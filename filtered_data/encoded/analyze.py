@@ -23,6 +23,8 @@ def flatten(x):
     else:
         return [x]
 
+unique_programs = set()
+
 def analyze(file_name):
     global longest_text, longest_program
     count = [0] * vocab_size
@@ -40,6 +42,8 @@ def analyze(file_name):
             longest_program = max(len(flatten(encoded_tree)), longest_program)
             all_words.update(text)
             word_counter.update(text)
+
+            unique_programs.add(str(problem['encoded_tree']))
     return count, word_counter
 
 def main():
@@ -47,19 +51,23 @@ def main():
     if len(sys.argv) > 1:
         vocab_size = int(sys.argv[1])
     token_counts, word_counts = {}, {}
+    used_tokens = 0
     for d_set in 'test dev train'.split():
         token_counts[d_set], word_counts[d_set] = analyze(d_set + '-' + str(vocab_size) + '.jsonl')
     for i in range(vocab_size):
         assert(token_counts['train'][i] > 0 or (token_counts['dev'][i] == 0 and token_counts['test'][i] == 0))
+        if token_counts['train'][i] > 0:
+            used_tokens += 1;
     for k in all_words:
         assert(word_counts['train'][k] > 0)
         assert(word_counts['train'][k] > 0)
     print(sorted([(token_counts['train'][i], token_counts['dev'][i], token_counts['test'][i], i) for i in range(vocab_size)]))
     print(sorted([(word_counts['train'][k], word_counts['dev'][k], word_counts['test'][k], k) for k in all_words]))
     print("%d words"%len(all_words))
+    print('%d used tokens'%used_tokens)
     print('longest text: %d'%longest_text)
     print('longest program: %d'%longest_program)
-
+    print('unique programs: %d'%len(unique_programs))
     return 0
 
 if __name__ == '__main__':

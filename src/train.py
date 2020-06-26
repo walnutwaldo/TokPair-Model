@@ -6,7 +6,7 @@ import numpy as np
 
 tf.disable_eager_execution()
 
-print("Num GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
+print("GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
 
 FLAGS = tf.flags.FLAGS
 
@@ -21,6 +21,7 @@ tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 tf.flags.DEFINE_integer('num_epochs', 10, 'number of training epochs.')
+tf.flags.DEFINE_integer('num_curriculums', 4, 'number of training curriculums.')
 
 tf.flags.DEFINE_integer("min_training_iterations", 1250,
                         "Minimum number of iterations to train for.")
@@ -29,17 +30,17 @@ tf.flags.DEFINE_integer("report_interval", 25,
 
 best_dev_loss = 20
 
-def get_datasets():
+def get_datasets(group):
     global train_dataset, num_train_batches
     global dev_dataset, num_dev_batches
     global train_iterator, next_train_element
     global dev_iterator, next_dev_element
 
-    train_dataset, num_train_batches = datasets.import_dataset('train', FLAGS.batch_size)
+    train_dataset, num_train_batches = datasets.import_dataset('train', FLAGS.batch_size, group)
     train_iterator = tf.data.make_initializable_iterator(train_dataset)
     next_train_element = train_iterator.get_next()
 
-    dev_dataset, num_dev_batches = datasets.import_dataset('dev', FLAGS.batch_size)
+    dev_dataset, num_dev_batches = datasets.import_dataset('dev', FLAGS.batch_size, group)
     dev_iterator = tf.data.make_initializable_iterator(dev_dataset)
     next_dev_element = dev_iterator.get_next()
 
@@ -82,7 +83,7 @@ def build_model():
     grad_descent = optimizer.apply_gradients(
             zip(grads, trainable_variables), global_step=global_step)
 
-def train_iter(sess, epoch, saver):
+def train_iter(sess, curriculum, epoch, num_epochs, saver):
     sess.run(train_iterator.initializer)
     for batch in range(num_train_batches):
         inp, target = sess.run(next_train_element)
@@ -92,7 +93,7 @@ def train_iter(sess, epoch, saver):
             return False
         step = sess.run(global_step)
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('[Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(epoch + 1, FLAGS.num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)))
+            print('[Curriculum %d/%d][Epoch %d/%d] Training Iteration %d/%d : Loss = %.3f Avg_Token_Prob = %.2f%%'%(curriculum, FLAGS.num_curriculums, epoch + 1, num_epochs, batch + 1, num_train_batches, batch_loss, 10 ** (2 + log_prob)), flush=True)
         if step % 1000 == 0:
             dev_iter(step, sess, saver)
     return True
@@ -110,7 +111,7 @@ def dev_iter(step, sess, saver):
         total_loss += batch_loss * inp.shape[0]
         total_cnt += inp.shape[0]
         if (batch + 1) % FLAGS.report_interval == 0:
-            print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob)))
+            print('\tDev Iteration %d/%d : Loss = %.3f Avg_Token Prob = %.2f%%'%(batch + 1, num_dev_batches, batch_loss, 10 ** (2 + log_prob)), flush=True)
 
     curr_loss = total_loss / total_cnt
 
@@ -124,24 +125,33 @@ def dev_iter(step, sess, saver):
 def train_model(min_training_iterations):
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        sess.run(tf.local_variables_initializer())
-        sess.run(tf.global_variables_initializer())
+        with tf.device('/device:GPU:0'):
+            sess.run(tf.local_variables_initializer())
+            sess.run(tf.global_variables_initializer())
+        for i in range(1, FLAGS.num_curriculums):
+            get_datasets(i)
+            with tf.device('/device:GPU:0'):
+                train_iter(sess, i, 0, 1, saver)
+        get_datasets(FLAGS.num_curriculums)
+
         epoch = 0
         while epoch < FLAGS.num_epochs:
+            with tf.device('/device:GPU:0'):
+                train_iter(sess, FLAGS.num_curriculums, epoch, FLAGS.num_epochs, saver)
+            """
             if not train_iter(sess, epoch, saver):
                 print('restarting training')
                 sess.run(tf.local_variables_initializer())
                 sess.run(tf.global_variables_initializer())
                 epoch = 0
             else:
-                epoch += 1
+                epoch += 1"""
+            epoch += 1
 
 def main():
-    get_datasets()
     build_model()
     tf.config.set_soft_device_placement(True)
-    with tf.device('/device:GPU:0'):
-        train_model(FLAGS.min_training_iterations)
+    train_model(FLAGS.min_training_iterations)
 
 if __name__ == '__main__':
     exit(main())

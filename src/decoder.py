@@ -5,7 +5,7 @@ trees = {}
 loaded_sketches = False
 
 def load_sketches():
-    with open(('filtered_' if datasets.filtered else '') + 'data/sketches.jsonl', 'r') as f:
+    with open(datasets.data_group + '/sketches.jsonl', 'r') as f:
         for line in f:
             data = json.loads(line)
             trees[data['id']] = data['tree']

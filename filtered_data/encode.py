@@ -1,5 +1,6 @@
 import json
 import copy
+import os
 import sys
 from collections import Counter
 from program_synthesis.algolisp.dataset import executor
@@ -8,6 +9,8 @@ vocab_size = 100
 primitives = []
 sketches = []
 vocab_map = {}
+
+num_curriculums = 4
 
 def load_sketches():
     with open('sketches.jsonl', 'r') as f:
@@ -75,26 +78,43 @@ def encode_tree(tree):
 def encode_text(text):
     return [vocab_map[w] for w in text]
 
+def _len(x):
+    if type(x) is list:
+        return len(x)
+    return 1
+
 def encode(in_file, out_file):
     problems = []
     with open(in_file, 'r') as f:
         for line in f:
             problems.append(json.loads(line))
-    with open(out_file, 'w') as f:
-        for problem in problems:
-            problem['encoded_tree'] = encode_tree(problem['short_tree'])
-            problem['encoded_text'] = encode_text(problem['text'])
-            json.dump(problem, f)
-            f.write('\n')
+    lens = []
+    for problem in problems:
+        problem['encoded_tree'] = encode_tree(problem['short_tree'])
+        problem['encoded_text'] = encode_text(problem['text'])
+        lens.append(_len(problem['encoded_text']) + _len(problem['encoded_tree']))
+    lens = sorted(lens)
+    for i in range(num_curriculums):
+        with open(out_file + '-' + str(i + 1) + '.jsonl', 'w') as f:
+            for problem in problems:
+                if _len(problem['encoded_tree']) + _len(problem['encoded_text']) <= lens[_len(lens) * (i + 1) // num_curriculums - 1]:
+                    json.dump(problem, f)
+                    f.write('\n')
 
 def main():
-    global vocab_size
+    global vocab_size, num_curriculums
     if len(sys.argv) > 1:
         vocab_size = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        num_curriculums = int(sys.argv[2])
     load_sketches()
     load_vocab()
+    if not os.path.exists('encoded/'):
+        os.mkdir('encoded/')
     for dset in 'train dev test'.split():
-        encode('metaset3.' + dset + '.jsonl', 'encoded/' + dset + '-' + str(vocab_size) + '.jsonl')
+        print('encoding ' + dset + ' ... ', end='', flush=True)
+        encode('metaset3.' + dset + '.jsonl', 'encoded/' + dset + '-' + str(vocab_size))
+        print('DONE')
 
 if __name__ == '__main__':
     exit(main())

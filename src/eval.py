@@ -1,7 +1,6 @@
 import json
 import numpy as np
 import tensorflow.compat.v1 as tf
-from program_synthesis.algolisp.dataset import executor
 import datasets
 import model
 import random
@@ -16,26 +15,24 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model3/model-16000', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/model1-6000', 'location to saved model')
 tf.flags.DEFINE_string('dataset', 'test', 'the dataset used for evaluation.')
-
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")
 tf.flags.DEFINE_float("optimizer_epsilon", 1e-8, 'Epsilon for gradient update formula.')
 tf.flags.DEFINE_float('max_grad_norm', 1, 'Maxmimum gradient norm.')
 
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
+tf.flags.DEFINE_integer('num_curriculums', 4, 'number of training curriculums.')
 
 tf.flags.DEFINE_integer("report_interval", 25,
                         "Iterations between reports (samples, valid loss).")
 tf.flags.DEFINE_integer("beam_size", 10, "beam size of search.")
 tf.flags.DEFINE_bool('debug', False, 'if debugging')
 
-ex = executor.LispExecutor()
-
 def get_datasets():
     global eval_problems
-    eval_problems = datasets.import_raw_dataset(FLAGS.dataset)
+    eval_problems = datasets.import_raw_dataset(FLAGS.dataset, FLAGS.num_curriculums)
     #random.shuffle(eval_problems)
 
 def select_row_elements(mat, idx):
@@ -159,7 +156,7 @@ def try_problem(problem, sess):
     while target_program[-1] == datasets.num_tokens:
         target_program.pop(-1)
 
-    for i in range(FLAGS.beam_size):
+    for i in range(FLAGS.beam_size - 1, FLAGS.beam_size):
         lin_prog = queue[i][1][:]
         while len(lin_prog) and lin_prog[-1] == datasets.num_tokens:
             lin_prog.pop(-1)

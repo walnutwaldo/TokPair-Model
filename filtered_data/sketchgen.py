@@ -141,7 +141,7 @@ def main():
     global vocab_size
     if len(sys.argv) > 1:
         vocab_size = int(sys.argv[1])
-    for t in 'train dev test'.split():
+    for t in 'train'.split():
         add_programs('metaset3.' + t + '.jsonl')
     init()
 

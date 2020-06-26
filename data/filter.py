@@ -1,12 +1,23 @@
 import json
 from program_synthesis.algolisp.dataset import executor
 import os
+import sys
+
+sys.path.append('../src')
+
+import  runner
 
 ex = executor.LispExecutor()
 
 def passes_evaluation(data):
-    evaluation = executor.evaluate_code(data['short_tree'], data['args'], data['tests'], ex)
-    return evaluation['tests-passed'] == evaluation['tests-executed']
+    for test in data['tests']:
+        try:
+            outp = runner.run_program(data['short_tree'], test['input'])
+        except:
+            return False
+        if outp != test['output']:
+            return False
+    return True
 
 def filter_dataset(original_file, new_file):
     print('processing %s ... 0' % original_file, end='\r', flush=True)
@@ -41,10 +52,10 @@ def filter_dataset(original_file, new_file):
     print('saving %s ... DONE     ' % new_file, flush=True)
 
 def main():
-    if not os.path.exists('../filtered_data/'):
-        os.mkdir('../filtered_data/')
+    if not os.path.exists('../filtered_data2/'):
+        os.mkdir('../filtered_data2/')
     for t in 'train dev test'.split():
-        filter_dataset('metaset3.' + t + '.jsonl', '../filtered_data/metaset3.' + t + '.jsonl')
+        filter_dataset('metaset3.' + t + '.jsonl', '../filtered_data2/metaset3.' + t + '.jsonl')
 
 if __name__ == '__main__':
     exit(main())
