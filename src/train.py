@@ -3,6 +3,7 @@ import tensorflow.compat.v1 as tf
 import datasets
 import model
 import numpy as np
+import os
 
 tf.disable_eager_execution()
 
@@ -119,8 +120,12 @@ def dev_iter(step, sess, saver):
 
     if curr_loss < best_dev_loss:
         best_dev_loss = curr_loss
-        print('\t** Current Model Saved')
+        desired_dir = os.path.dirname(os.path.abspath(FLAGS.save_dir))
+        if not os.path.isdir(desired_dir):
+            os.makedirs(desired_dir) 
+            
         saver.save(sess, FLAGS.save_dir, global_step=step)
+        print('\t** Current Model Saved')
 
 def train_model(min_training_iterations):
     saver = tf.train.Saver()
