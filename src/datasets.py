@@ -2,13 +2,13 @@ import tensorflow.compat.v1 as tf
 import json
 import numpy as np
 
-data_group = 'filtered_data'
+data_group = 'filtered_data2' # folder to look in for data
 
-num_tokens = 150 # does not include pad
-vocab_size = 284 # does not include pad
+num_tokens = 150 # this is the first number provided to encode.py (does not include pad)
+vocab_size = 284 # analyze.py will provide the correct number followed by "words" (does not include pad)
 
-inp_size = 164
-outp_size = 108 #217
+inp_size = 164 # analyze.py will provide the correct number preceded by "longest text:"
+outp_size = 109 # analyze.py will provide the correct number preceded by "longest program:"
 
 shuffle_buffer = 1000
 

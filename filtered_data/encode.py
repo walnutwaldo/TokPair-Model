@@ -64,7 +64,7 @@ def apply_sketch(sketch, tree, token_set):
             tree = [sketch['id']] + tree[1:sketch['child_idx'] + 1] + tree[sketch['child_idx'] + 2:]
             token_set.add(sketch['id'])
 
-    if len(tree) is 1:
+    if len(tree) == 1:
         return tree[0]
     return [recur(p) for p in tree]
 

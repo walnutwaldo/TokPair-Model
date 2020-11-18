@@ -7,6 +7,8 @@ longest_text = 0
 longest_program = 0
 all_words = set()
 
+num_curricula = 1
+
 def fill_token_set(token_set, tree):
     if type(tree) is list:
         for a in tree:
@@ -47,13 +49,15 @@ def analyze(file_name):
     return count, word_counter
 
 def main():
-    global vocab_size
+    global vocab_size, num_curricula
     if len(sys.argv) > 1:
         vocab_size = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        num_curricula = int(sys.argv[2])
     token_counts, word_counts = {}, {}
     used_tokens = 0
     for d_set in 'test dev train'.split():
-        token_counts[d_set], word_counts[d_set] = analyze(d_set + '-' + str(vocab_size) + '.jsonl')
+        token_counts[d_set], word_counts[d_set] = analyze(d_set + '-' + str(vocab_size) + '-' + str(num_curricula) + '.jsonl')
     for i in range(vocab_size):
         assert(token_counts['train'][i] > 0 or (token_counts['dev'][i] == 0 and token_counts['test'][i] == 0))
         if token_counts['train'][i] > 0:
