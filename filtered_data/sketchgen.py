@@ -124,7 +124,7 @@ def upd(program, par_sketch, child_sketch, child_idx, new_sketch):
         elif type(x) is not list and x == child_sketch:
             program = [new_sketch] + program[1:child_idx + 1] + program[child_idx + 2:]
         
-    if len(program) is 1:
+    if len(program) == 1:
         return recur(program[0])
     res = [recur(x) for x in program]
     program_res = [a[0] for a in res]

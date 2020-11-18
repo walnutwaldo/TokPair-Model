@@ -1,5 +1,6 @@
 *.jsonl
 .*
 .env/
+*/vocab.txt
 program_synthesis/
 __pycache__
