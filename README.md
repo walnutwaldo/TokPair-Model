@@ -19,7 +19,7 @@ source .env/bin/activate
 The code also assumes that  [PyTorch](https://pytorch.org/)  is already installed.
 ### Installation
 
-Clone and install the repository https://github.com/nearai/program_synthesis (you may download and install it directly within the prog_synth_project repository).
+Clone and install the repository https://github.com/nearai/program_synthesis (you may download and install it directly within the root directory).
 
 ```
 git clone https://github.com/nearai/program_synthesis.git
