@@ -15,7 +15,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('hidden_size', 512, 'Size of the LSTM hidden state.')
 tf.flags.DEFINE_integer('embedding_size', 128, 'Size of word embeddings.')
 
-tf.flags.DEFINE_string('save_dir', 'saved_models/model1-6000', 'location to saved model')
+tf.flags.DEFINE_string('save_dir', 'saved_models/my_first_model/model-3', 'location to saved model')
 tf.flags.DEFINE_string('dataset', 'test', 'the dataset used for evaluation.')
 
 tf.flags.DEFINE_float("learning_rate", 0.001 , "Optimizer learning rate.")

@@ -65,3 +65,9 @@ Next, to train a model, run the file `src/train.py` from the root directory. The
 ```
 python src/train.py --save_dir=saved_models/my_first_model/model --num_epochs=10 --num_curriculums=4 --batch_size=32
 ```
+### Evaluating
+Once a model is trained, find the latest saved version. In case you used the provided training command, the latest saved version should look like `saved_models/my_first_model/model-NUMBER`. To evaluate the model on the test data, run:
+```
+python src/eval.py --beam_size=10 --save_dir=saved_models/my_first_model/model-3 --dataset=test
+```
+Changing the dataset flag to `dev` or `train` will evaluate the models on the dev and training datsets resepectively. The beam size among other variables can be changed via flags as well.
